@@ -2,7 +2,6 @@ import React, { useMemo, useState } from 'react'
 import BigNumber from 'bignumber.js'
 import styled, { keyframes } from 'styled-components'
 import { Flex, Text, Skeleton } from '@pancakeswap-libs/uikit'
-import { communityFarms } from 'config/constants'
 import { Farm } from 'state/types'
 import { provider } from 'web3-core'
 import useI18n from 'hooks/useI18n'
@@ -108,17 +107,12 @@ const ExpandingWrapper = styled.div<{ expanded: boolean }>`
 
 interface FarmCardProps {
   farm: FarmWithStakedValue
-  removed: boolean
   cakePrice?: BigNumber
-  bnbPrice?: BigNumber
   ethereum?: provider
   account?: string
-  btcPrice?:BigNumber
-  wethPrice?:BigNumber
-  routePrice?:BigNumber
 }
 
-const FarmCard: React.FC<FarmCardProps> = ({ farm, removed, cakePrice, bnbPrice, ethereum, account, wethPrice, routePrice }) => {
+const VaultCard: React.FC<FarmCardProps> = ({ farm, cakePrice, ethereum, account }) => {
   const TranslateString = useI18n()
 
   const [showExpandableSection, setShowExpandableSection] = useState(false)
@@ -133,22 +127,12 @@ const FarmCard: React.FC<FarmCardProps> = ({ farm, removed, cakePrice, bnbPrice,
     if (!farm.lpTotalInQuoteToken) {
       return null
     }
-  
-    if (farm.quoteTokenSymbol === QuoteToken.BNB) {
-      return bnbPrice.times(farm.lpTotalInQuoteToken)
-    }
-    if (farm.quoteTokenSymbol === QuoteToken.SIGMA) {
+    if (farm.quoteTokenSymbol === QuoteToken.CAKE) {
       return cakePrice.times(farm.lpTotalInQuoteToken)
-    }
-    if (farm.quoteTokenSymbol === QuoteToken.WETH) {
-      return wethPrice.times(farm.lpTotalInQuoteToken)
-    }
-    if (farm.quoteTokenSymbol === QuoteToken.ROUTE) {
-      return routePrice.times(farm.lpTotalInQuoteToken)
     }
    
     return farm.lpTotalInQuoteToken
-  }, [bnbPrice, cakePrice, farm.lpTotalInQuoteToken, farm.quoteTokenSymbol, wethPrice, routePrice])
+  }, [cakePrice, farm.lpTotalInQuoteToken, farm.quoteTokenSymbol])
 
   const totalValueFormated = totalValue
     ? `$${Number(totalValue).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
@@ -189,35 +173,33 @@ const FarmCard: React.FC<FarmCardProps> = ({ farm, removed, cakePrice, bnbPrice,
       {farm.risk === 999 && <StyledCardAccentSpecial />}
       <CardHeading
         lpLabel={lpLabel}
-        multiplier={farm.multiplier}
+        multiplier='Auto'
         risk={risk}
         depositFee={farm.depositFeeBP}
         farmImage={farmImage}
         tokenSymbol={farm.tokenSymbol}
       />
-      {!removed && (
-        <Flex justifyContent='space-between' alignItems='center'>
-          <Text>{TranslateString(352, 'APR')}:</Text>
-          <Text bold style={{ display: 'flex', alignItems: 'center' }}>
-            {farm.apy ? (
-              <>
-                <ApyButton
-                  lpLabel={lpLabel}
-                  quoteTokenAdresses={quoteTokenAdresses}
-                  quoteTokenSymbol={quoteTokenSymbol}
-                  tokenAddresses={tokenAddresses}
-                  cakePrice={cakePrice}
-                  apy={farm.apy}
-                  pid={farm.pid}
-                />
-                {farmAPY}%
-              </>
-            ) : (
-              <Skeleton height={24} width={80} />
-            )}
-          </Text>
-        </Flex>
-      )}
+      <Flex justifyContent='space-between' alignItems='center'>
+        <Text>APY:</Text>
+        <Text bold style={{ display: 'flex', alignItems: 'center' }}>
+          {farm.apy ? (
+            <>
+              <ApyButton
+                lpLabel={lpLabel}
+                quoteTokenAdresses={quoteTokenAdresses}
+                quoteTokenSymbol={quoteTokenSymbol}
+                tokenAddresses={tokenAddresses}
+                cakePrice={cakePrice}
+                apy={farm.apy}
+                pid={farm.pid}
+              />
+              {farmAPY}%
+            </>
+          ) : (
+            <Skeleton height={24} width={80} />
+          )}
+        </Text>
+      </Flex>
       <Flex justifyContent='space-between'>
         <Text>{TranslateString(318, 'Earn')}:</Text>
         <Text bold>{earnLabel}</Text>
@@ -234,7 +216,6 @@ const FarmCard: React.FC<FarmCardProps> = ({ farm, removed, cakePrice, bnbPrice,
       />
       <ExpandingWrapper expanded={showExpandableSection}>
         <DetailsSection
-          removed={removed}
           isTokenOnly={farm.isTokenOnly}
           bscScanAddress={
             farm.isTokenOnly ?
@@ -255,4 +236,4 @@ const FarmCard: React.FC<FarmCardProps> = ({ farm, removed, cakePrice, bnbPrice,
   )
 }
 
-export default FarmCard
+export default VaultCard

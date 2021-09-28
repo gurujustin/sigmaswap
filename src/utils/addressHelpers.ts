@@ -9,7 +9,7 @@ export const getMasterChefAddress = () => {
   return addresses.masterChef[chainId]
 }
 export const getVaultAddress = () => {
-  return addresses.masterChef[chainId]
+  return addresses.vault[chainId]
 }
 export const getMulticallAddress = () => {
   return addresses.mulltiCall[chainId]

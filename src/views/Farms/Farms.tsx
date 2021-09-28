@@ -5,7 +5,7 @@ import BigNumber from 'bignumber.js'
 import { useWallet } from '@binance-chain/bsc-use-wallet'
 import { provider } from 'web3-core'
 import { Image, Heading } from '@pancakeswap-libs/uikit'
-import { BLOCKS_PER_YEAR, CAKE_PER_BLOCK, CAKE_POOL_PID } from 'config'
+import { BLOCKS_PER_YEAR, BLOCKS_PER_DAY } from 'config'
 import FlexLayout from 'components/layout/Flex'
 import Page from 'components/layout/Page'
 import {
@@ -24,7 +24,7 @@ import Background from '../Background'
 import FarmCard, { FarmWithStakedValue } from './components/FarmCard/FarmCard'
 import FarmTabButtons from './components/FarmTabButtons'
 import Divider from './components/Divider'
-// import PoolCard from 'views/AutoPool/components/PoolCard'
+import VaultCard from './components/VaultCard/VaultCard'
 
 export interface FarmsProps {
   tokenMode?: boolean
@@ -58,7 +58,7 @@ const Farms: React.FC<FarmsProps> = (farmsProps) => {
   const stakedOnlyFarms = activeFarms.filter(
     (farm) => farm.userData && new BigNumber(farm.userData.stakedBalance).isGreaterThan(0),
   )
-
+  // console.log(vaultPool)
   // /!\ This function will be removed soon
   // This function compute the APY for each farm and will be replaced when we have a reliable API
   // to retrieve assets prices against USD
@@ -69,18 +69,13 @@ const Farms: React.FC<FarmsProps> = (farmsProps) => {
         // if (!farm.tokenAmount || !farm.lpTotalInQuoteToken || !farm.lpTotalInQuoteToken) {
         //   return farm
         // }
-        const cakeRewardPerBlock = new BigNumber(farm.eggPerBlock || 1)
-          .times(new BigNumber(farm.poolWeight))
-          .div(new BigNumber(10).pow(18))
-        const cakeRewardPerYear = cakeRewardPerBlock.times(BLOCKS_PER_YEAR)
-        let apy = cakePrice.times(cakeRewardPerYear)
 
         let totalValue = new BigNumber(farm.lpTotalInQuoteToken || 0)
 
         if (farm.quoteTokenSymbol === QuoteToken.BNB) {
           totalValue = totalValue.times(bnbPrice)
         }
-        if (farm.quoteTokenSymbol === QuoteToken.CAKE) {
+        if (farm.quoteTokenSymbol === QuoteToken.SIGMA) {
           totalValue = totalValue.times(cakePrice)
         }
         if (farm.quoteTokenSymbol === QuoteToken.WETH) {
@@ -89,27 +84,46 @@ const Farms: React.FC<FarmsProps> = (farmsProps) => {
         if (farm.quoteTokenSymbol === QuoteToken.ROUTE) {
           totalValue = totalValue.times(routePrice)
         }
-
-        if (totalValue.comparedTo(0) > 0) {
-          apy = apy.div(totalValue)
+        const cakeRewardPerBlock = new BigNumber(farm.eggPerBlock || 1)
+          .times(new BigNumber(farm.poolWeight))
+          .div(new BigNumber(10).pow(18))
+        let apy
+        if (farm.isVault) {
+          const cakeRewardPerDay = cakeRewardPerBlock.times(BLOCKS_PER_DAY)
+          const prate = cakeRewardPerDay.div(totalValue)
+          apy = cakePrice.times(prate.plus(new BigNumber(1)).pow(new BigNumber(365)).minus(new BigNumber(1)))
+        } else {
+          const cakeRewardPerYear = cakeRewardPerBlock.times(BLOCKS_PER_YEAR)
+          apy = cakePrice.times(cakeRewardPerYear)
+          if (totalValue.comparedTo(0) > 0) {
+            apy = apy.div(totalValue)
+          }
         }
-
         return { ...farm, apy }
       })
 
       return farmsToDisplayWithAPY.map((farm) => (
-        <FarmCard
-          key={farm.pid}
-          farm={farm}
-          removed={removed}
-          bnbPrice={bnbPrice}
-          cakePrice={cakePrice}
-          ethereum={ethereum}
-          account={account}
-          wethPrice={wethPrice}
-          // btcPrice={btcPrice}
-          routePrice={routePrice}
-        />
+        farm.isVault ?
+          <VaultCard
+            key={farm.pid}
+            farm={farm}
+            cakePrice={cakePrice}
+            ethereum={ethereum}
+            account={account}
+          />
+        :
+          <FarmCard
+            key={farm.pid}
+            farm={farm}
+            removed={removed}
+            bnbPrice={bnbPrice}
+            cakePrice={cakePrice}
+            ethereum={ethereum}
+            account={account}
+            wethPrice={wethPrice}
+            // btcPrice={btcPrice}
+            routePrice={routePrice}
+          />
       ))
     },
     [bnbPrice, account, cakePrice, ethereum, wethPrice, routePrice],
@@ -132,7 +146,6 @@ const Farms: React.FC<FarmsProps> = (farmsProps) => {
           <Divider />
           <FlexLayout>
             <Route exact path={`${path}`}>
-              {/* {tokenMode && <PoolCard />} */}
               {stakedOnly ? farmsList(stakedOnlyFarms, false) : farmsList(activeFarms, false)}
             </Route>
             <Route exact path={`${path}/history`}>

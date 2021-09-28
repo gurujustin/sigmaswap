@@ -1,10 +1,10 @@
 export default {
   cake: { // LEAFEX
-    137: '0x5cb984817d5a1e3259c2bbc3a0ebdfe6bd1de74b', // SIGMA LIVE
+    137: '0xbD01698Ab485A7b8092A4e32B9c8B1939F6D2708', // SIGMA LIVE
     80001: '0x72572CCf5208b59f4BcC14e6653d8c31Cd1fC5a0', 
   },
   masterChef: {
-    137: '0xCE117Ece66Dd125D2d3a9fF3401091D7869A38c5', // LIVE
+    137: '0x15d073a4a6D452a95fB9B3d80cF9e3Dc75BbFDD8', // LIVE
     80001: '0x9cCA28d98EC895c50C266b7f138dD6316aADB52A',
   },
   wmatic: {
@@ -57,7 +57,11 @@ export default {
     80001: '',
   },
   referral: {
-    137: '0x73FD3343637DD95274045Ccc07F6adBC0A5367A6', // referral
+    137: '0x714b2e10c4836aCC190D7807865A3db43081EAC8', // referral
+    80001: '',
+  },
+  vault: {
+    137: '0xB62E8C9f46d99525e83B1100Bab8E7381F2B4B43', // vault
     80001: '',
   },
 

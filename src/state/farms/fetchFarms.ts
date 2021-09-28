@@ -2,7 +2,7 @@ import BigNumber from 'bignumber.js'
 import erc20 from 'config/abi/erc20.json'
 import masterchefABI from 'config/abi/masterchef.json'
 import multicall from 'utils/multicall'
-import { getMasterChefAddress } from 'utils/addressHelpers'
+import { getMasterChefAddress, getVaultAddress } from 'utils/addressHelpers'
 import farmsConfig from 'config/constants/farms'
 import { QuoteToken } from '../../config/constants/types'
 
@@ -58,6 +58,47 @@ const fetchFarms = async () => {
         tokenDecimals,
         quoteTokenDecimals
       ] = await multicall(erc20, calls)
+      
+      const [info, userInfo, totalAllocPoint, eggPerBlock] = farmConfig.isVault ? await multicall(masterchefABI, [
+          {
+            address: getMasterChefAddress(),
+            name: 'poolInfo',
+            params: [0],
+          },
+          {
+            address: getMasterChefAddress(),
+            name: 'userInfo',
+            params: [0, getVaultAddress()],
+          },
+          {
+            address: getMasterChefAddress(),
+            name: 'totalAllocPoint',
+          },
+          {
+            address: getMasterChefAddress(),
+            name: 'CherryPerBlock',
+          },
+        ])
+      : await multicall(masterchefABI, [
+        {
+          address: getMasterChefAddress(),
+          name: 'poolInfo',
+          params: [farmConfig.pid],
+        },
+        {
+          address: getMasterChefAddress(),
+          name: 'userInfo',
+          params: [farmConfig.pid, getVaultAddress()],
+        },
+        {
+          address: getMasterChefAddress(),
+          name: 'totalAllocPoint',
+        },
+        {
+          address: getMasterChefAddress(),
+          name: 'CherryPerBlock',
+        },
+      ])
 
       let tokenAmount;
       let lpTotalInQuoteToken;
@@ -65,7 +106,11 @@ const fetchFarms = async () => {
       let tokenPriceVsQuote;
 
       if(farmConfig.isTokenOnly){
-        tokenAmount = new BigNumber(lpTokenBalanceMC).div(new BigNumber(10).pow(tokenDecimals));
+        if (farmConfig.isVault) {
+          tokenAmount = new BigNumber(userInfo.amount).div(new BigNumber(10).pow(tokenDecimals));
+        } else {
+          tokenAmount = new BigNumber(lpTokenBalanceMC).div(new BigNumber(10).pow(tokenDecimals));
+        }
         
         if(farmConfig.tokenSymbol === QuoteToken.BUSD && farmConfig.quoteTokenSymbol === QuoteToken.BUSD){
           tokenPriceVsQuote = new BigNumber(1);          
@@ -104,21 +149,6 @@ const fetchFarms = async () => {
         lpStakedTotal = new BigNumber(lpTokenBalanceMC).div(new BigNumber(10).pow(quoteTokenDecimals))        
       }
 
-      const [info, totalAllocPoint, eggPerBlock] = await multicall(masterchefABI, [
-        {
-          address: getMasterChefAddress(),
-          name: 'poolInfo',
-          params: [farmConfig.pid],
-        },
-        {
-          address: getMasterChefAddress(),
-          name: 'totalAllocPoint',
-        },
-        {
-          address: getMasterChefAddress(),
-          name: 'SIGMA_PER_BLOCK',
-        },
-      ])
 
       // console.log('debug', farmConfig.pid, tokenPriceVsQuote.toJSON())
       const allocPoint = new BigNumber(info.allocPoint._hex)
